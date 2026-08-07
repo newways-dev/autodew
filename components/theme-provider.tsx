@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
+import * as React from 'react'
+import { ThemeProvider as NextThemesProvider, useTheme } from 'next-themes'
 
 function ThemeProvider({
   children,
@@ -28,9 +28,9 @@ function isTypingTarget(target: EventTarget | null) {
 
   return (
     target.isContentEditable ||
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.tagName === "SELECT"
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.tagName === 'SELECT'
   )
 }
 
@@ -47,7 +47,7 @@ function ThemeHotkey() {
         return
       }
 
-      if (event.key.toLowerCase() !== "d") {
+      if (event.key.toLowerCase() !== 'd') {
         return
       }
 
@@ -55,13 +55,13 @@ function ThemeHotkey() {
         return
       }
 
-      setTheme(resolvedTheme === "dark" ? "light" : "dark")
+      setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
     }
 
-    window.addEventListener("keydown", onKeyDown)
+    window.addEventListener('keydown', onKeyDown)
 
     return () => {
-      window.removeEventListener("keydown", onKeyDown)
+      window.removeEventListener('keydown', onKeyDown)
     }
   }, [resolvedTheme, setTheme])
 
