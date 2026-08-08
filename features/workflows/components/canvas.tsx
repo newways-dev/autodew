@@ -12,16 +12,37 @@ import {
   type ColorMode,
   type Connection,
   type Edge,
-  type Node,
+  NodeTypes,
 } from '@xyflow/react'
+
+import { StepNode } from '@/features/workflows/components/step-node'
+import type { StepNodeType } from '@/features/workflows/nodes/node-registry'
+
 import '@xyflow/react/dist/style.css'
 
-const initialNodes: Node[] = [
-  { id: '1', data: { label: 'Node 1' }, position: { x: 0, y: 0 } },
-  { id: '2', data: { label: 'Node 2' }, position: { x: 250, y: 0 } },
+const nodeTypes: NodeTypes = { step: StepNode }
+
+const initialNodes: StepNodeType[] = [
+  {
+    id: 'start',
+    type: 'step',
+    position: { x: 0, y: 0 },
+    data: { type: 'start', kind: 'trigger', title: 'Start', values: {} },
+  },
+  {
+    id: 'open-url',
+    type: 'step',
+    position: { x: 0, y: 150 },
+    data: {
+      type: 'open-url',
+      kind: 'action',
+      title: 'Open URL',
+      values: {},
+    },
+  },
 ]
 
-const initialEdges: Edge[] = [{ id: 'e1-2', source: '1', target: '2' }]
+const initialEdges: Edge[] = []
 
 const emptySubscribe = () => () => {}
 
@@ -52,6 +73,7 @@ export function Canvas() {
   return (
     <div className="size-full">
       <ReactFlow
+        nodeTypes={nodeTypes}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
