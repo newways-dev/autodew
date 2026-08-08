@@ -16,9 +16,9 @@ import { AvatarStack } from '@liveblocks/react-ui'
 import { StepNode } from '@/features/workflows/components/step-node'
 import type { StepNodeType } from '@/features/workflows/nodes/node-registry'
 
-import '@liveblocks/react-flow/styles.css'
-import '@liveblocks/react-ui/styles.css'
 import '@xyflow/react/dist/style.css'
+import '@liveblocks/react-ui/styles.css'
+import '@liveblocks/react-flow/styles.css'
 
 const nodeTypes: NodeTypes = { step: StepNode }
 
