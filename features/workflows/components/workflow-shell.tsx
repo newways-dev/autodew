@@ -4,8 +4,8 @@ import {
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
 
-import { RightSidebar } from './right-sidebar'
 import { Canvas } from './canvas'
+import { RightSidebar } from './right-sidebar'
 
 interface WorkflowShellProps {
   workflowId: string
