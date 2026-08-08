@@ -1,4 +1,5 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
+
 import { liveblocks } from '@/lib/liveblocks'
 
 export async function POST() {
