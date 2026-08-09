@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import { auth, clerkClient } from '@clerk/nextjs/server'
 
 // `Liveblocks` is a global interface declared in liveblocks.config.ts.
@@ -10,14 +11,26 @@ export async function POST(request: Request) {
     return new Response('Unauthorized', { status: 401 })
   }
 
+  Sentry.getIsolationScope().setAttributes({
+    route: 'POST /api/liveblocks/users',
+    userId,
+    orgId,
+  })
+
   let userIds: unknown
   try {
     ;({ userIds } = await request.json())
   } catch {
+    Sentry.logger.warn('Liveblocks user resolution — invalid JSON body', {
+      orgId,
+    })
     return new Response('Invalid JSON body', { status: 400 })
   }
 
   if (!Array.isArray(userIds) || userIds.some((id) => typeof id !== 'string')) {
+    Sentry.logger.warn('Liveblocks user resolution — malformed userIds', {
+      orgId,
+    })
     return new Response('Expected { userIds: string[] }', { status: 400 })
   }
 
@@ -54,6 +67,12 @@ export async function POST(request: Request) {
         'Anonymous',
       avatar: user.imageUrl,
     }
+  })
+
+  Sentry.logger.info('Liveblocks users resolved', {
+    orgId,
+    requested: ids.length,
+    resolved: resolved.filter(Boolean).length,
   })
 
   return Response.json(resolved)
