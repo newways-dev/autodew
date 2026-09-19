@@ -4,6 +4,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
 ![Trigger.dev](https://img.shields.io/badge/Trigger.dev-4-18181B?style=for-the-badge)
 ![Liveblocks](https://img.shields.io/badge/Liveblocks-3-7C3AED?style=for-the-badge)
+[![Live](https://img.shields.io/badge/live-autodew.vercel.app-success?style=for-the-badge)](https://autodew.vercel.app)
 
 A visual, multiplayer workflow builder for AI-driven browser automation. Users compose a graph of steps on a shared canvas — open a page, act on it, extract data, observe the DOM, hand control to an autonomous agent, send an email — and the workflow runs as a durable background job against a cloud browser, with each step's status streaming back to the UI.
 
@@ -130,7 +131,7 @@ Other scripts: `npm run build`, `npm run start`, `npm run lint`, `npm run typech
 
 ## Tests and status
 
-There are no automated tests; `validateGraph` and `interpolate` are pure functions and the obvious first candidates. `npm run typecheck` and `npm run build` pass. Send Email sends from Resend's sandbox address (`onboarding@resend.dev`). The Railway deployment is currently offline, so there is no live demo, and running the app requires the accounts listed above.
+There are no automated tests; `validateGraph` and `interpolate` are pure functions and the obvious first candidates. `npm run typecheck` and `npm run build` pass. Send Email sends from Resend's sandbox address (`onboarding@resend.dev`). The app is deployed on Vercel (Trigger.dev tasks run on Trigger.dev's cloud). Sign-up is required, and authentication runs on a Clerk development instance. The Agent node and session replay need the Pro plan on the signed-in organization; running it yourself requires the accounts listed above.
 
 ## License
 
