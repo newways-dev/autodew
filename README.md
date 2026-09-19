@@ -1,243 +1,137 @@
 # Autodew
 
-*Started as a build-along from a Code With Antonio course; grown well past that starting point since — the multiplayer canvas, plan gating, live run console, session replay, and most of the node executors are custom work layered on top of the original scaffold.*
+![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
+![Trigger.dev](https://img.shields.io/badge/Trigger.dev-4-18181B?style=for-the-badge)
+![Liveblocks](https://img.shields.io/badge/Liveblocks-3-7C3AED?style=for-the-badge)
 
-[![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Deployed on Railway](https://img.shields.io/badge/deployed-Railway-0B0D0E?style=flat-square&logo=railway&logoColor=white)](https://autodew-app.up.railway.app/)
+A visual, multiplayer workflow builder for AI-driven browser automation. Users compose a graph of steps on a shared canvas — open a page, act on it, extract data, observe the DOM, hand control to an autonomous agent, send an email — and the workflow runs as a durable background job against a cloud browser, with each step's status streaming back to the UI.
 
-A visual, multiplayer workflow builder for AI-driven browser automation. Users
-compose a graph of steps — open a page, click, extract data, observe the DOM,
-hand control to an autonomous agent, send an email — on a collaborative canvas,
-and Autodew runs it as a durable background job against a real cloud browser,
-streaming each step's status back to the UI live.
+> [!NOTE]
+> A learning project. It started from a Code with Antonio course project, and I used it to practise three things: durable background jobs (Trigger.dev), putting AI agents inside a product (Stagehand's `act` / `extract` / `observe` / `agent` exposed as workflow nodes), and working with AI coding agents (the repo carries agent rules and skills: `CLAUDE.md`, `AGENTS.md`, `.agents/skills`). The 37 commits span August 7–9, 2026.
 
-It's aimed at the gap between "write a Playwright script" and "click around a
-no-code tool that can't reason about a page": steps are described in plain
-language and executed by an AI browser-automation engine, runs survive past the
-length of a normal HTTP request and keep going after the tab is closed, and the
-canvas itself is a shared document multiple people can edit at once.
+## What you can build with it
 
-**Live demo:** [autodew-app.up.railway.app](https://autodew-app.up.railway.app/) (sign-up required — auth is handled by Clerk)
+A workflow is a directed graph with one Start node. Steps are described in plain language and resolved by the browser-automation engine at run time, so the same graph does not depend on CSS selectors.
 
-## 💡 Why I built this
+- **Open URL → Extract → Send Email** — open a product page, extract its price, email the result. The email body references the Extract step with a token like `{{ <nodeId>.extraction }}`.
+- **Open URL → Act → Observe** — click through a page, then check what the page shows.
+- **Open URL → Agent** — hand an open-ended instruction to an autonomous agent (Pro plan).
 
-Three pieces of this were genuinely interesting engineering problems, not just
-API integrations. **Real-time multiplayer state**: the canvas has to stay
-consistent across concurrent editors without a bespoke CRDT layer, so the
-graph itself — nodes, edges, field values — lives inside a Liveblocks room
-instead of a database row. **Durable execution that outlives a request**: a
-workflow run can take far longer than an HTTP round trip and has to survive a
-closed tab, so runs are modeled as Trigger.dev tasks with their own retry and
-metadata-streaming semantics, not `async` route handlers. **AI-driven browser
-control**: rather than hand-writing brittle selectors, each step is a
-plain-language instruction resolved at run time by Stagehand against a real
-cloud browser — which also means step outputs aren't fully known until
-they've actually executed, which shapes how the interpolation and validation
-logic had to be written. Getting those three to work together — a live graph,
-a durable executor, and a step whose result is only knowable at run time — is
-what most of the custom code on top of the original course project is about.
+Runs are started manually with the Run button; Start is the only trigger.
 
-## ✨ Key Features
+## How a run works
 
-- 🧩 **Visual node-based workflow builder** on a [React Flow](https://reactflow.dev)
-  canvas, with typed step nodes: `Open URL`, `Act`, `Extract`, `Observe`,
-  `Agent`, and `Send Email`, each with its own editable fields and declared
-  outputs. Building an automation feels like sketching a flowchart, not
-  writing a script.
-- 👥 **Real-time multiplayer editing** — the canvas is backed by a
-  [Liveblocks](https://liveblocks.io) room per workflow, so multiple users can
-  move nodes, edit fields, and connect edges on the same graph concurrently,
-  with live cursors and presence avatars. Two people can design the same
-  automation together without stepping on each other's changes.
-- 🤖 **AI browser automation** via [Stagehand v3](https://github.com/browserbase/stagehand)
-  running against a [Browserbase](https://www.browserbase.com) cloud browser —
-  `act`/`extract`/`observe` for targeted steps and a full autonomous `agent`
-  mode for open-ended instructions. Steps are described in plain English
-  instead of CSS selectors, so a small site redesign doesn't quietly break
-  every workflow.
-- ♻️ **Durable background execution** — a run is a [Trigger.dev](https://trigger.dev)
-  task, not a request handler: it topologically sorts the graph (with cycle
-  detection), walks connected nodes in dependency order, and keeps running
-  independent of the browser tab, with automatic retries on failure. Kick off
-  a run, close the laptop, come back to a finished result.
-- 📡 **Live run console** — each step's status (`pending` → `running` →
-  `done`/`failed`), duration, and output streams to the UI in real time via
-  Trigger.dev's realtime metadata, subscribed with a workflow-scoped public
-  access token; past runs stay browsable in a history panel. You watch a run
-  happen step by step instead of waiting on a spinner and hoping.
-- 🔗 **Output interpolation between steps** — a `{{nodeId.path}}` templating
-  syntax lets a later step's fields reference an earlier step's output (e.g.
-  feed an `Extract` result into a `Send Email` body). Steps compose instead
-  of each one running in isolation.
-- 🎥 **Session replay** — each run's Browserbase browser session is recorded and
-  played back in the console as an HLS video (via `hls.js`), proxied through a
-  server route that never exposes the Browserbase API key to the client. When
-  a run fails, you can actually watch what the browser did instead of
-  guessing from logs.
-- ✅ **Graph validation** — exactly one `Start` trigger, no cycles, and no
-  dangling/unconnected runs, checked client-side before a run is attempted and
-  re-checked server-side before the graph is persisted. Bad graphs get caught
-  before they burn a run.
-- 🏢 **Multi-tenant organizations** via Clerk, with workflows scoped to the active
-  organization end-to-end (queries, mutations, and the background task all
-  take `orgId`). Teams keep their own workflows separate by default.
-- 🔒 **Plan-gated features** via Clerk Billing — the `Agent` node and session
-  replay require a Pro organization plan, enforced in the server action and API
-  route (not just hidden in the UI), so a non-Pro org can't reach either by
-  calling the endpoint directly.
-- ✉️ **Transactional email** as a first-class workflow step, sent through Resend.
-- 🐞 **Error tracking & structured logging** with Sentry, instrumented across both
-  the Next.js app and the Trigger.dev background tasks, with source maps
-  uploaded at build time.
+```mermaid
+flowchart LR
+    Canvas["React Flow canvas<br/>Liveblocks room (live graph)"] -->|Run: current graph| Action["Server Action<br/>auth · plan gate · validate"]
+    Action --> DB[("Neon Postgres<br/>graph snapshot")]
+    Action -->|trigger| Task["Trigger.dev task<br/>run-workflow"]
+    Task --> Browser["Browserbase session<br/>via Stagehand"]
+    Task --> Email[Resend]
+    Task -->|run metadata| Console["Run console<br/>(realtime)"]
+    Browser -->|recording| Replay["/api/replays proxy<br/>HLS in hls.js"]
+```
 
-## 🧰 Tech stack
+1. **Edit.** The canvas state (nodes, edges, field values) lives in a Liveblocks room keyed by the workflow id. Nothing is written to Postgres while people edit.
+2. **Run.** The Run button sends the current graph to a Server Action, which checks the active organization, blocks the Agent node unless the org is on the Pro plan, validates the graph, and saves it to Postgres as the canonical snapshot. It then triggers the `run-workflow` task, tagged `workflow:<id>`.
+3. **Execute.** The task loads the snapshot, keeps only nodes that touch an edge, and topologically sorts them. Before each step it resolves `{{ nodeId.path }}` placeholders from upstream outputs, then runs the step's executor. One Browserbase session is opened on the first browser step and reused by every later one, so the whole run is a single recording.
+4. **Watch.** After every state change the task publishes the full step list (status, duration, output or error) to the run's metadata. The page mints a read-only public token scoped to the workflow's tag and subscribes with `useRealtimeRunsWithTag`, so the console updates without polling.
+5. **Replay.** A finished run returns its Browserbase session id. The replay panel fetches the recording through `/api/replays/[sessionId]`, which proxies only the HLS manifest so the Browserbase API key never reaches the browser (Pro plan).
 
-| Layer                       | Choice                                                                                                 | Why                                                                                                                                                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🧱 Framework                | Next.js 16 (App Router), React 19, TypeScript                                                          | Server Actions handle workflow mutations (create/delete/run) directly, no separate API layer needed for those                                                                                              |
-| 🌐 Browser automation       | [Stagehand v3](https://github.com/browserbase/stagehand) + [Browserbase](https://www.browserbase.com) | AI-driven `act`/`extract`/`observe`/`agent` primitives run against a real, disposable cloud browser instead of a brittle selector-based script                                                             |
-| ♻️ Background execution     | [Trigger.dev v4](https://trigger.dev)                                                                  | Runs need to outlive a serverless request, retry on failure, and keep executing after the client disconnects — plus its realtime metadata API drives the live step console without a bespoke pub/sub layer |
-| 👥 Realtime collaboration   | [Liveblocks](https://liveblocks.io) (`@liveblocks/react-flow`)                                         | Off-the-shelf CRDT sync, presence, and cursors for the canvas, rather than building multiplayer sync from scratch                                                                                          |
-| 🗺️ Canvas                   | [`@xyflow/react`](https://reactflow.dev) (React Flow)                                                  | Node/edge graph rendering, connections, and layout                                                                                                                                                         |
-| 🔐 Auth & billing           | [Clerk](https://clerk.com) (+ Clerk Billing)                                                           | Multi-tenant organizations and plan gating (`has({ plan: 'pro' })`) come built in, checked server-side everywhere a Pro feature is reachable                                                               |
-| 🗄️ Database                 | [Neon](https://neon.tech) (serverless Postgres) + [Drizzle ORM](https://orm.drizzle.team)              | HTTP driver works from Server Components and the edge; workflow graphs are stored as a single `jsonb` column mirroring React Flow's own shape                                                              |
-| ✉️ Email                    | [Resend](https://resend.com)                                                                           | Transactional email as a workflow action                                                                                                                                                                   |
-| 🐞 Observability            | [Sentry](https://sentry.io) (`@sentry/nextjs`, `@sentry/node`)                                         | Error tracking and structured logs across both the web app and the Trigger.dev worker, with source maps uploaded via an esbuild plugin                                                                     |
-| 🎨 UI                       | Tailwind CSS v4, shadcn/ui, Radix/Base UI                                                              | Accessible primitives, styled to match                                                                                                                                                                     |
-| 🎬 Session replay playback  | `hls.js`                                                                                                | Plays Browserbase's HLS session recordings client-side                                                                                                                                                     |
-| 🔢 Graph ordering           | `toposort`                                                                                              | Orders nodes by their edges before execution and detects cycles up front                                                                                                                                   |
+## Key decisions
 
-## 🏗️ Architecture / how it works
+- **Live graph in Liveblocks, canonical snapshot in Postgres on Run** ([features/workflows/actions.ts](features/workflows/actions.ts), [lib/db/schema.ts](lib/db/schema.ts)) — concurrent edits merge inside the Liveblocks room without custom sync code, and Postgres is only written when someone runs the workflow. The snapshot is a single `jsonb` column shaped like React Flow's own nodes and edges. Trade-off: two copies of the graph, and the server has to treat the client-sent graph as input to validate, which is why the write goes through `validateGraph` and is scoped by `orgId`.
+- **Runs are Trigger.dev tasks, not request handlers** ([features/workflows/tasks/run-workflow.ts](features/workflows/tasks/run-workflow.ts), [trigger.config.ts](trigger.config.ts)) — a run can outlive an HTTP request and the browser tab. The config sets 3 attempts with exponential backoff and a 3600 s maximum duration, and progress goes out through run metadata instead of a separate pub/sub layer. Trade-off: one more service to run, and metadata needs explicit flushing — the task flushes before a step is marked `running` and before it throws on failure, otherwise the UI never sees those states.
+- **Validate and order the graph before running** ([features/workflows/lib/validate-graph.ts](features/workflows/lib/validate-graph.ts)) — `validateGraph` is a pure function (exactly one Start trigger, at least one edge, no cycle), so the client can pre-flight the graph it holds and the server reuses the same function as its save-time check. Orphaned nodes are skipped at run time rather than rejected.
+- **Step outputs are referenced by template and resolved at run time** ([features/workflows/lib/interpolate.ts](features/workflows/lib/interpolate.ts), [features/workflows/hooks/use-upstream-connections.ts](features/workflows/hooks/use-upstream-connections.ts)) — a step's result is not known until it has run, so fields hold `{{ nodeId.path }}` tokens that are substituted just before the step executes. A missing path becomes an empty string and an object becomes its JSON. In the editor, `useUpstreamConnections` lists every ancestor's declared outputs, so tokens are inserted from a picker rather than typed.
+- **Node types as a manifest plus a typed executor map** ([features/workflows/nodes/node-registry.ts](features/workflows/nodes/node-registry.ts), [features/workflows/nodes/node-executors.ts](features/workflows/nodes/node-executors.ts)) — each node's fields, declared outputs and icon live in one registry, and executors are a `satisfies Record<ActionNodeType, NodeExecutor>` map, so adding an action node without an executor fails type-checking.
+- **Plan gating enforced on the server** ([features/workflows/actions.ts](features/workflows/actions.ts), [route.ts](<app/api/replays/[sessionId]/route.ts>)) — the Agent node and session replay require the Pro organization plan, and both checks (`has({ plan: 'pro' })`) run in the Server Action and the API route. The Trigger.dev task has no auth context, and a UI-only check can be bypassed by calling the endpoint directly.
 
-**Editing.** Each workflow's canvas state (nodes, edges, field values) lives in
-a Liveblocks room keyed by the workflow's id — that's the live, multiplayer
-copy everyone edits. Nothing is written to Postgres on every keystroke.
+## Stack
 
-**Running.** Clicking Run:
+| Layer | Technology | Role in this project |
+|---|---|---|
+| Framework | Next.js 16 (App Router), React 19, TypeScript | Editor pages, Server Actions (create, delete, run, cancel), API routes |
+| Canvas | `@xyflow/react` (React Flow) | Node and edge graph |
+| Collaboration | Liveblocks (`@liveblocks/react-flow`) | Shared graph, live cursors, avatar stack |
+| Background jobs | Trigger.dev v4 | `run-workflow` task, retries, realtime run metadata |
+| Browser automation | Stagehand v3, Browserbase | `act` / `extract` / `observe` / `agent` against a cloud browser; session recording |
+| Auth and billing | Clerk (Organizations, Billing) | Org-scoped workflows, Pro plan gating |
+| Database | Neon Postgres, Drizzle ORM | `workflows` table, graph as `jsonb` |
+| Email | Resend | Send Email node |
+| Monitoring | Sentry | App errors and structured logs; every task failure forwarded by a global `tasks.onFailure` hook; source maps uploaded at build and deploy |
+| Replay playback | hls.js | Plays Browserbase HLS recordings |
+| UI | Tailwind CSS v4, shadcn/ui | Components |
 
-1. A Server Action (`runWorkflowAction`) reads the current graph out of the
-   Liveblocks room, checks the Agent-node/Pro-plan gate, validates the graph
-   (`validateGraph` — exactly one Start node, no cycles, no empty graph), and
-   persists it to Postgres as the workflow's canonical snapshot.
-2. It triggers the `run-workflow` Trigger.dev task, tagged `workflow:<id>`,
-   and returns the run handle.
-3. The task loads the persisted graph, keeps only nodes touching an edge
-   (orphaned nodes are skipped), and topologically sorts them with `toposort`.
-4. It opens one Browserbase session (via Stagehand), lazily, on the first
-   browser step, and reuses it for every subsequent step so the whole run is
-   one continuous recording.
-5. Each node runs through its executor (`open-url`, `act`, `extract`,
-   `observe`, `agent`, or `send-email`), with `{{nodeId.path}}` placeholders in
-   its fields resolved from upstream nodes' outputs first.
-6. After every state change the task publishes the full step list (id, type,
-   status, duration, output/error) to the run's realtime metadata, so the UI
-   never has to poll.
+## What this project was for
 
-**Watching.** The dashboard mints a workflow-scoped Trigger.dev public access
-token server-side and subscribes to it with `useRealtimeRunsWithTag`. The
-console renders live and historical runs from that one subscription — the
-latest run's steps come from its streaming metadata while it's in flight, and
-from its final output once it completes. A finished run also carries its
-Browserbase session id, which a replay panel uses to fetch and stream back the
-recording as HLS, proxied through a server route so the Browserbase API key
-never reaches the browser.
+- **Durable execution** — modelling long-running work as Trigger.dev tasks with retries and realtime metadata instead of async route handlers.
+- **Agents inside a product** — Stagehand's four primitives exposed as workflow nodes, plus a Pro-gated autonomous Agent node.
+- **Realtime collaboration** — a Liveblocks room per workflow, private by default and opened only to the owning organization.
+- **Multi-tenant plumbing** — Clerk Organizations and Billing, with every workflow query scoped by `orgId` and plan checks made on the server.
+- **Working with coding agents** — project rules and skills committed to the repo so an agent picks up its conventions (for example, `AGENTS.md` says to derive database types from the Drizzle schema).
 
-## ⚙️ Installation & local setup
+## Run locally
+
+Needs accounts for Clerk (Organizations enabled, plus an organization plan with the slug `pro` in Billing), Neon, Liveblocks, Trigger.dev, Browserbase and Resend.
 
 ```bash
-# install dependencies
 npm install
+npm run db:migrate      # uses DATABASE_URL_UNPOOLED from .env.local
+npm run dev             # http://localhost:3000
 
-# apply the Drizzle schema to your database
-npm run db:migrate
-
-# start the Next.js dev server
-npm run dev
-
-# in a separate terminal, start the Trigger.dev dev worker
+# in a second terminal — runs only execute while the dev worker is up
 npx trigger.dev dev
 ```
 
-The app expects a `.env.local` file with the variables listed below. `npm run dev`
-starts Next.js on `http://localhost:3000`; workflow runs won't execute unless
-the Trigger.dev dev worker is also running.
+`trigger.config.ts` still points at the original Trigger.dev project ref (and `next.config.ts` at the original Sentry org and project); replace them with your own.
 
-Other scripts:
+<details>
+<summary>Environment variables (.env.local)</summary>
 
-```bash
-npm run build         # production build
-npm run start         # run the production build
-npm run lint          # eslint
-npm run format        # prettier --write
-npm run typecheck     # tsc --noEmit
-npm run db:generate   # generate a Drizzle migration from schema changes
-npm run db:studio     # open Drizzle Studio against the configured database
-```
+| Key | Purpose |
+|---|---|
+| `DATABASE_URL` | Pooled Neon connection used by the app (HTTP driver) |
+| `DATABASE_URL_UNPOOLED` | Direct connection used by `drizzle-kit` migrations |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Clerk |
+| `TRIGGER_SECRET_KEY` | Trigger.dev (read by the SDK) |
+| `LIVEBLOCKS_SECRET_KEY` | Liveblocks server client (room creation, user identification) |
+| `BROWSERBASE_API_KEY` | Browserbase sessions and replays. Model calls go through Browserbase's model gateway, so no separate model key is needed |
+| `RESEND_API_KEY` | Send Email node |
+| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN` | Error reporting and source-map upload |
 
-## 🔐 Environment variables
+Clerk's sign-in and sign-up URL variables (`NEXT_PUBLIC_CLERK_SIGN_IN_URL` and friends) are optional routing config for the `(auth)` routes. No `.env.example` is committed — TODO for me to add one.
 
-No `.env.example` is committed; these are the variables read across the app
-(`.env.local` for local development):
+Other scripts: `npm run build`, `npm run start`, `npm run lint`, `npm run typecheck`, `npm run format`, `npm run db:generate`, `npm run db:studio`.
 
-```
-# Clerk (auth & billing)
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=
-NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=
-NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=
+</details>
 
-# Neon / Postgres
-DATABASE_URL=
-DATABASE_URL_UNPOOLED=
-NEON_BRANCH=
-
-# Trigger.dev
-TRIGGER_SECRET_KEY=
-
-# Liveblocks
-NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY=
-LIVEBLOCKS_SECRET_KEY=
-
-# Browserbase / Stagehand
-BROWSERBASE_API_KEY=
-
-# Resend
-RESEND_API_KEY=
-
-# Sentry
-SENTRY_DSN=
-NEXT_PUBLIC_SENTRY_DSN=
-SENTRY_AUTH_TOKEN=
-```
-
-## 📁 Project structure
+## Project structure
 
 ```
-app/
-  (auth)/                  Clerk sign-in, sign-up, and org selection routes
-  (dashboard)/
-    workflows/[id]/        The workflow editor page
-  api/
-    liveblocks/auth/       Mints Liveblocks room tokens
-    replays/[sessionId]/   Proxies a Browserbase session recording as HLS
-features/workflows/
-  actions.ts                Server Actions: create/delete/run/cancel a workflow
-  data.ts                    Postgres reads/writes for workflows (org-scoped)
-  components/                Canvas, run console, inspector, replay player, ...
-  nodes/
-    node-registry.ts         The node type manifest (fields, outputs, icon)
-    node-executors.ts         Maps node type -> executor function
-    act.ts / extract.ts / observe.ts / agent.ts / open-url.ts / send-email.ts
-  tasks/run-workflow.ts       The Trigger.dev task that executes a graph
-  lib/
-    validate-graph.ts         Structural checks (single trigger, no cycles)
-    interpolate.ts             {{nodeId.path}} templating between steps
-lib/
-  db/schema.ts                Drizzle schema (workflows table, JSONB graph)
-  browserbase.ts, liveblocks.ts, resend.ts   Server-only SDK clients
-drizzle/                      Generated SQL migrations
+.
+├── app/
+│   ├── (auth)/                  # Clerk sign-in, sign-up, organization picker
+│   ├── (dashboard)/             # Workflow list, editor (workflows/[id]), billing
+│   └── api/                     # liveblocks/auth, liveblocks/users, replays/[sessionId]
+├── features/workflows/
+│   ├── actions.ts               # Server Actions: create, delete, run, cancel
+│   ├── data.ts                  # Org-scoped Postgres reads and writes
+│   ├── components/              # Canvas, inspector, run console, logs, session replay
+│   ├── nodes/                   # Node registry and one executor per node type
+│   ├── tasks/run-workflow.ts    # The Trigger.dev task
+│   └── lib/                     # validate-graph, interpolate
+├── lib/                         # Drizzle + Neon, Liveblocks, Browserbase, Resend clients
+├── drizzle/                     # Generated SQL migrations
+├── .agents/, .claude/           # Agent skills used while building
+└── CLAUDE.md, AGENTS.md         # Rules for coding agents working in this repo
 ```
+
+## Tests and status
+
+There are no automated tests; `validateGraph` and `interpolate` are pure functions and the obvious first candidates. `npm run typecheck` and `npm run build` pass. Send Email sends from Resend's sandbox address (`onboarding@resend.dev`). The Railway deployment is currently offline, so there is no live demo, and running the app requires the accounts listed above.
+
+## License
+
+No license file is included. Personal learning project — shown here for portfolio purposes.
