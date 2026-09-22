@@ -69,7 +69,7 @@ export async function deleteWorkflowAction(id: string) {
   Sentry.logger.info('Workflow deleted', { workflowId: id, orgId })
 
   revalidatePath('/workflows', 'layout')
-  redirect('/')
+  redirect('/workflows')
 }
 
 export async function runWorkflowAction({
