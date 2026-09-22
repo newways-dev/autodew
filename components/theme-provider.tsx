@@ -47,7 +47,10 @@ function ThemeHotkey() {
         return
       }
 
-      if (event.key.toLowerCase() !== 'd') {
+      // event.key can be missing on synthetic keydown events (some browser
+      // extensions and autofill tools dispatch them without it), so this
+      // guards the .toLowerCase() call rather than assuming DOM lib's typing.
+      if (!event.key || event.key.toLowerCase() !== 'd') {
         return
       }
 
