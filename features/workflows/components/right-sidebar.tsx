@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useReactFlow, useStore } from '@xyflow/react'
-import { Lock, MoreHorizontal, Play, Square, Trash2 } from 'lucide-react'
+import { Clock, Lock, MoreHorizontal, Play, Square, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -31,6 +31,7 @@ import {
 } from '@/features/workflows/actions'
 import { HistoryPanel } from '@/features/workflows/components/history-panel'
 import { NodeIcon } from '@/features/workflows/components/node-icon'
+import { ScheduleDialog } from '@/features/workflows/components/schedule-dialog'
 import { useLiveRun } from '@/features/workflows/components/workflow-runs-provider'
 import { useProPlan } from '@/features/workflows/hooks/use-pro-plan'
 import { useUpstreamConnections } from '@/features/workflows/hooks/use-upstream-connections'
@@ -329,34 +330,53 @@ function Palette() {
 // The "..." menu for workflow-level actions.
 function ActionsMenu({ workflowId }: { workflowId: string }) {
   const [isPending, startTransition] = useTransition()
+  // Owned here rather than inside ScheduleDialog: a DropdownMenuItem closes
+  // its menu (and would unmount a Dialog nested inside it) the moment it's
+  // selected, so the Dialog is rendered as a sibling and just told to open.
+  const [scheduleOpen, setScheduleOpen] = useState(false)
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button size="icon" variant="ghost">
-          <MoreHorizontal />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-48">
-        <DropdownMenuItem
-          variant="destructive"
-          disabled={isPending}
-          className="text-xs [&_svg:not([class*='size-'])]:size-3.5"
-          onSelect={(e) => {
-            // Keep the menu mounted while the delete runs so the disabled state
-            // stays visible. Running inside a transition lets the router handle
-            // the action's redirect home on success.
-            e.preventDefault()
-            startTransition(async () => {
-              await deleteWorkflowAction(workflowId)
-            })
-          }}
-        >
-          <Trash2 />
-          Delete workflow
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="icon" variant="ghost">
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-48">
+          <DropdownMenuItem
+            disabled={isPending}
+            className="text-xs [&_svg:not([class*='size-'])]:size-3.5"
+            onSelect={() => setScheduleOpen(true)}
+          >
+            <Clock />
+            Schedule…
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            disabled={isPending}
+            className="text-xs [&_svg:not([class*='size-'])]:size-3.5"
+            onSelect={(e) => {
+              // Keep the menu mounted while the delete runs so the disabled state
+              // stays visible. Running inside a transition lets the router handle
+              // the action's redirect home on success.
+              e.preventDefault()
+              startTransition(async () => {
+                await deleteWorkflowAction(workflowId)
+              })
+            }}
+          >
+            <Trash2 />
+            Delete workflow
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ScheduleDialog
+        workflowId={workflowId}
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+      />
+    </>
   )
 }
 

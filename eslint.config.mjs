@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Trigger.dev's local build cache (bundled/minified worker code, not
+    // source) — without this, `npm run lint` also lints its output and
+    // buries real findings under tens of thousands of generated-code ones.
+    ".trigger/**",
   ]),
 ]);
 
