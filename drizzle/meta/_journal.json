@@ -15,6 +15,13 @@
       "when": 1786136385773,
       "tag": "0001_stiff_hellfire_club",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790100727653,
+      "tag": "0002_numerous_logan",
+      "breakpoints": true
     }
   ]
 }

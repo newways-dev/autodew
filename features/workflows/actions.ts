@@ -12,6 +12,11 @@ import {
   deleteWorkflow,
   saveWorkflowGraph,
 } from '@/features/workflows/data'
+import {
+  createRun,
+  listRuns,
+  setRunTriggerId,
+} from '@/features/workflows/runs-data'
 import { WorkflowGraph } from '@/lib/db/schema'
 
 export async function createWorkflowAction(name: string) {
@@ -107,21 +112,38 @@ export async function runWorkflowAction({
     throw error
   }
 
+  // Created before the task is triggered so a "running" row exists even if
+  // triggering itself is what fails. The task gets this row's id in its
+  // payload so it knows which run to complete without looking anything up.
+  const run = await createRun({ orgId, workflowId: id })
+
   const handle = await tasks.trigger<typeof runWorkflowTask>(
     'run-workflow',
-    { workflowId: id, orgId },
+    { workflowId: id, orgId, runId: run.id },
     { tags: [`workflow:${id}`] }
   )
+
+  await setRunTriggerId({ id: run.id, orgId, triggerRunId: handle.id })
 
   Sentry.logger.info('Workflow run triggered', {
     workflowId: id,
     orgId,
-    runId: handle.id,
+    runId: run.id,
+    triggerRunId: handle.id,
     nodeCount: graph.nodes.length,
     hasAgentNode,
   })
 
   return handle
+}
+
+// Backs the History tab — the persisted run log in Postgres, independent of
+// Trigger.dev's own retention and available without a realtime subscription.
+export async function listWorkflowRunHistoryAction(workflowId: string) {
+  const { orgId } = await auth()
+  if (!orgId) throw new Error('No active organization')
+
+  return listRuns(orgId, workflowId)
 }
 
 export async function cancelWorkflowRunAction(runId: string) {

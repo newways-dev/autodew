@@ -29,6 +29,7 @@ import {
   deleteWorkflowAction,
   runWorkflowAction,
 } from '@/features/workflows/actions'
+import { HistoryPanel } from '@/features/workflows/components/history-panel'
 import { NodeIcon } from '@/features/workflows/components/node-icon'
 import { useLiveRun } from '@/features/workflows/components/workflow-runs-provider'
 import { useProPlan } from '@/features/workflows/hooks/use-pro-plan'
@@ -459,12 +460,21 @@ export function RightSidebar({ workflowId }: { workflowId: string }) {
           >
             Editor
           </TabsTrigger>
+          <TabsTrigger
+            value="history"
+            className="flex-none rounded-sm data-active:bg-accent! data-active:text-accent-foreground! data-active:shadow-none! dark:data-active:border-transparent!"
+          >
+            History
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="toolbar" className="flex min-h-0 flex-col">
           <Palette />
         </TabsContent>
         <TabsContent value="editor" className="flex min-h-0 flex-col">
           <Inspector key={selected?.id} node={selected} />
+        </TabsContent>
+        <TabsContent value="history" className="flex min-h-0 flex-col">
+          <HistoryPanel workflowId={workflowId} />
         </TabsContent>
       </Tabs>
     </ResizablePanel>
