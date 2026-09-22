@@ -1,8 +1,10 @@
 import { and, desc, eq } from 'drizzle-orm'
+import { tasks } from '@trigger.dev/sdk'
 
 import { db } from '@/lib/db'
 import { runs } from '@/lib/db/schema'
 import type { RunStep } from '@/features/workflows/lib/run-step'
+import type { runWorkflowTask } from '@/features/workflows/tasks/run-workflow'
 
 // Called from runWorkflowAction, before the task is triggered — so a row
 // exists (status "running") even in the unlikely case the task never starts.
@@ -64,6 +66,31 @@ export async function completeRun({
       completedAt: new Date(),
     })
     .where(and(eq(runs.id, id), eq(runs.orgId, orgId)))
+}
+
+// The one place a run is actually kicked off — used by the Run button
+// (after its own auth/graph checks) and by the scheduled task (which has no
+// Clerk session to check). Creates the row first so one exists even if
+// triggering itself fails, then triggers the task with that row's id and
+// records Trigger.dev's own run id once the trigger call resolves.
+export async function triggerWorkflowRun({
+  orgId,
+  workflowId,
+}: {
+  orgId: string
+  workflowId: string
+}) {
+  const run = await createRun({ orgId, workflowId })
+
+  const handle = await tasks.trigger<typeof runWorkflowTask>(
+    'run-workflow',
+    { workflowId, orgId, runId: run.id },
+    { tags: [`workflow:${workflowId}`] }
+  )
+
+  await setRunTriggerId({ id: run.id, orgId, triggerRunId: handle.id })
+
+  return handle
 }
 
 export function listRuns(orgId: string, workflowId: string) {
