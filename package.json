@@ -18,6 +18,9 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.103",
+    "@ai-sdk/google": "^2.0.97",
+    "@ai-sdk/openai": "^2.0.127",
     "@base-ui/react": "^1.7.0",
     "@browserbasehq/sdk": "^2.16.0",
     "@browserbasehq/stagehand": "^3.7.1",
@@ -36,6 +39,7 @@
     "@trigger.dev/react-hooks": "4.5.10",
     "@trigger.dev/sdk": "4.5.10",
     "@xyflow/react": "^12.11.2",
+    "ai": "^5.0.263",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
