@@ -21,6 +21,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ResizablePanel } from '@/components/ui/resizable'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -35,6 +42,7 @@ import { ScheduleDialog } from '@/features/workflows/components/schedule-dialog'
 import { useLiveRun } from '@/features/workflows/components/workflow-runs-provider'
 import { useProPlan } from '@/features/workflows/hooks/use-pro-plan'
 import { useUpstreamConnections } from '@/features/workflows/hooks/use-upstream-connections'
+import { premiumNodeTypes } from '@/features/workflows/lib/premium-nodes'
 import { validateGraph } from '@/features/workflows/lib/validate-graph'
 import {
   nodeRegistry,
@@ -94,6 +102,23 @@ function Field({
   // field a clicked token should land in.
   onFocus: () => void
 }) {
+  if (field.options) {
+    return (
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger id={field.key} className="w-full">
+          <SelectValue placeholder={field.placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {field.options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    )
+  }
+
   if (field.multiline) {
     return (
       <Textarea
@@ -212,11 +237,6 @@ const sections: { kind: StepNodeKind; label: string }[] = [
 // Every node type from the registry, filtered into the groups below.
 const definitions = Object.values(nodeRegistry)
 
-// Node types that only orgs on the Pro plan can add. The Agent node is our most
-// expensive node, so it's gated; every other node stays free to keep workflow
-// building open to everyone.
-const premiumNodes = new Set<NodeType>(['agent'])
-
 // The Toolbar tab: a button per node type that adds it to the canvas.
 function Palette() {
   // The shared React Flow store (lifted to a provider above the canvas and this
@@ -232,7 +252,7 @@ function Palette() {
   // A premium node is locked until the plan check has loaded and confirms Pro.
   // We wait for `isLoaded` so a Pro org never flashes a locked state on mount.
   const isLocked = (type: NodeType) =>
-    premiumNodes.has(type) && isLoaded && !isPro
+    premiumNodeTypes.has(type) && isLoaded && !isPro
 
   const add = (type: NodeType) => {
     // Premium nodes route to upgrade instead of being added for non-pro orgs.
@@ -267,11 +287,18 @@ function Palette() {
       y: (height / 2 - y) / zoom,
     }
 
+    const fields = def.fields as NodeField[]
+    const values = Object.fromEntries(
+      fields
+        .filter((field) => field.defaultValue)
+        .map((field) => [field.key, field.defaultValue!])
+    )
+
     addNodes({
       id: crypto.randomUUID(),
       type: 'step',
       position,
-      data: { type, kind: def.kind, title, values: {} },
+      data: { type, kind: def.kind, title, values },
     })
   }
 

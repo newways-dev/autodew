@@ -1,5 +1,6 @@
 import type { Node } from '@xyflow/react'
 import {
+  Bell,
   Bot,
   Eye,
   Globe,
@@ -17,9 +18,10 @@ export type NodeField = {
   key: string
   label: string
   placeholder?: string
-  // Render as a multi-line textarea instead of a single-line input.
   multiline?: boolean
   required?: boolean
+  options?: { value: string; label: string }[]
+  defaultValue?: string
 }
 
 export type NodeOutput = {
@@ -175,6 +177,50 @@ export const nodeRegistry = {
       },
     ],
     outputs: [{ path: 'id', label: 'Email ID' }],
+  },
+  'notify-on-change': {
+    type: 'notify-on-change',
+    kind: 'action',
+    label: 'Notify on Change',
+    icon: Bell,
+    accent: 'bg-orange-500 text-white',
+    fields: [
+      {
+        key: 'to',
+        label: 'To',
+        placeholder: 'person@example.com',
+        required: true,
+      },
+      {
+        key: 'subject',
+        label: 'Subject',
+        placeholder: 'Price changed',
+        required: true,
+      },
+      {
+        key: 'value',
+        label: 'Value to watch',
+        placeholder: '{{ extract.extraction }}',
+        multiline: true,
+        required: true,
+      },
+      {
+        key: 'provider',
+        label: 'AI provider',
+        defaultValue: 'google',
+        options: [
+          { value: 'google', label: 'Google (Gemini)' },
+          { value: 'openai', label: 'OpenAI (GPT)' },
+          { value: 'anthropic', label: 'Anthropic (Claude)' },
+        ],
+      },
+    ],
+    outputs: [
+      { path: 'changed', label: 'Changed' },
+      { path: 'value', label: 'Value' },
+      { path: 'previousValue', label: 'Previous value' },
+      { path: 'summary', label: 'Summary' },
+    ],
   },
 } satisfies Record<string, NodeDefinition>
 

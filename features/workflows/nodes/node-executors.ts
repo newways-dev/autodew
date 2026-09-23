@@ -7,11 +7,15 @@ import type {
 import { act } from './act'
 import { agent } from './agent'
 import { extract } from './extract'
+import { notifyOnChange } from './notify-on-change'
 import { observe } from './observe'
 import { openUrl } from './open-url'
 import { sendEmail } from './send-email'
 
 export type NodeContext = {
+  orgId: string
+  workflowId: string
+  nodeId: string
   values: Record<string, string>
   getStagehand: () => Promise<Stagehand>
 }
@@ -37,4 +41,14 @@ export const nodeExecutors: Partial<Record<NodeType, NodeExecutor>> = {
     agent({ stagehand: await getStagehand(), instruction: values.instruction }),
   'send-email': async ({ values }) =>
     sendEmail({ to: values.to, subject: values.subject, body: values.body }),
+  'notify-on-change': async ({ orgId, workflowId, nodeId, values }) =>
+    notifyOnChange({
+      orgId,
+      workflowId,
+      nodeId,
+      to: values.to,
+      subject: values.subject,
+      value: values.value,
+      provider: values.provider,
+    }),
 } satisfies Record<ActionNodeType, NodeExecutor>

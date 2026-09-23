@@ -15,23 +15,21 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
   const Icon = def.icon
   const fields = def.fields.filter((field) => values[field.key])
 
-  // Reflect this node's state in the latest run. A node is only "running" while
-  // the run is actually live — once it ends, a node left marked running stops
-  // spinning rather than hanging forever.
   const { steps, isLive } = useLatestRunSteps()
   const status = steps.find((step) => step.nodeId === id)?.status
   const isRunning = status === 'running' && isLive
   const isFailed = status === 'failed'
 
-  // A trigger starts the flow and takes no input, so it has no target handle.
   const hasTarget = kind !== 'trigger'
 
   return (
     <div
       className={cn(
-        'max-w-80 min-w-50 rounded-(--radius) border-2 border-border bg-card text-card-foreground',
-        isRunning && 'border-blue-500',
-        isFailed && 'border-destructive',
+        'max-w-80 min-w-50 overflow-hidden rounded-(--radius) border border-border bg-card text-card-foreground shadow-md transition-shadow duration-200',
+        isRunning &&
+          'border-blue-500/60 shadow-[0_0_0_3px_rgba(59,130,246,0.25),0_8px_24px_-8px_rgba(59,130,246,0.5)]',
+        isFailed &&
+          'border-destructive/60 shadow-[0_0_0_3px_rgba(239,68,68,0.2),0_8px_24px_-8px_rgba(239,68,68,0.4)]',
         selected && 'ring-2 ring-ring ring-offset-2 ring-offset-background'
       )}
     >
@@ -44,10 +42,12 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
         />
       )}
 
+      <div className={cn('h-1 w-full', def.accent.split(' ')[0])} />
+
       <div className="flex items-center gap-2.5 px-3 py-2.5">
         <div
           className={cn(
-            'flex size-7 shrink-0 items-center justify-center rounded-md',
+            'flex size-7 shrink-0 items-center justify-center rounded-md shadow-sm ring-1 ring-black/10',
             def.accent
           )}
         >
@@ -57,26 +57,35 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
             <Icon className="size-4" />
           )}
         </div>
-        <span className="text-sm font-semibold">{title}</span>
+        <span className="truncate text-sm font-semibold">{title}</span>
       </div>
 
       {fields.length > 0 && (
         <>
           <div className="border-t border-border" />
           <div className="flex flex-col gap-1.5 px-3 py-2.5">
-            {fields.map((field) => (
-              <div
-                key={field.key}
-                className="flex items-center justify-between gap-4 text-xs"
-              >
-                <span className="shrink-0 text-muted-foreground">
-                  {field.label}
-                </span>
-                <span className="truncate font-medium">
-                  {values[field.key]}
-                </span>
-              </div>
-            ))}
+            {fields.map((field) => {
+              const fieldValue = values[field.key]
+              const isTemplate = fieldValue.includes('{{')
+              return (
+                <div
+                  key={field.key}
+                  className="flex items-center justify-between gap-4 text-xs"
+                >
+                  <span className="shrink-0 text-muted-foreground">
+                    {field.label}
+                  </span>
+                  <span
+                    className={cn(
+                      'truncate font-medium',
+                      isTemplate && 'font-mono text-[11px] text-primary'
+                    )}
+                  >
+                    {fieldValue}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </>
       )}

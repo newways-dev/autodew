@@ -102,6 +102,29 @@ export function listRuns(orgId: string, workflowId: string) {
     .limit(20)
 }
 
+export async function getLastCompletedRun({
+  orgId,
+  workflowId,
+}: {
+  orgId: string
+  workflowId: string
+}) {
+  const [run] = await db
+    .select()
+    .from(runs)
+    .where(
+      and(
+        eq(runs.workflowId, workflowId),
+        eq(runs.orgId, orgId),
+        eq(runs.status, 'completed')
+      )
+    )
+    .orderBy(desc(runs.startedAt))
+    .limit(1)
+
+  return run
+}
+
 export async function getRun(orgId: string, id: string) {
   const [run] = await db
     .select()

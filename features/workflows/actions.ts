@@ -13,6 +13,7 @@ import {
   saveWorkflowGraph,
   setWorkflowSchedule,
 } from '@/features/workflows/data'
+import { premiumNodeTypes } from '@/features/workflows/lib/premium-nodes'
 import { listRuns, triggerWorkflowRun } from '@/features/workflows/runs-data'
 import { scheduledWorkflowRunTask } from '@/features/workflows/tasks/scheduled-workflow-run'
 import { WorkflowGraph } from '@/lib/db/schema'
@@ -91,13 +92,15 @@ export async function runWorkflowAction({
     workflowId: id,
   })
 
-  const hasAgentNode = graph.nodes.some((node) => node.data.type === 'agent')
-  if (hasAgentNode && !has({ plan: 'pro' })) {
-    Sentry.logger.warn('Workflow run denied — Agent node requires Pro plan', {
+  const hasPremiumNode = graph.nodes.some((node) =>
+    premiumNodeTypes.has(node.data.type)
+  )
+  if (hasPremiumNode && !has({ plan: 'pro' })) {
+    Sentry.logger.warn('Workflow run denied — premium node requires Pro plan', {
       workflowId: id,
       orgId,
     })
-    throw new Error('The Agent node requires the Pro plan.')
+    throw new Error('This workflow uses a Pro-only node.')
   }
 
   try {
@@ -117,7 +120,7 @@ export async function runWorkflowAction({
     orgId,
     triggerRunId: handle.id,
     nodeCount: graph.nodes.length,
-    hasAgentNode,
+    hasPremiumNode,
   })
 
   return handle
@@ -164,15 +167,15 @@ export async function setWorkflowScheduleAction({
   })
 
   const workflow = await getWorkflow(orgId, id)
-  const hasAgentNode = workflow?.graph?.nodes.some(
-    (node) => node.data.type === 'agent'
+  const hasPremiumNode = workflow?.graph?.nodes.some((node) =>
+    premiumNodeTypes.has(node.data.type)
   )
-  if (hasAgentNode && !has({ plan: 'pro' })) {
-    Sentry.logger.warn('Schedule denied - Agent node requires Pro plan', {
+  if (hasPremiumNode && !has({ plan: 'pro' })) {
+    Sentry.logger.warn('Schedule denied - premium node requires Pro plan', {
       workflowId: id,
       orgId,
     })
-    throw new Error('The Agent node requires the Pro plan.')
+    throw new Error('This workflow uses a Pro-only node.')
   }
 
   const schedule = await schedules.create({
